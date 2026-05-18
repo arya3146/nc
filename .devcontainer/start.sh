@@ -5,6 +5,9 @@ tmux send-keys -t nikvpn "sudo /usr/local/bin/xray run -c /etc/xray/config.json 
 sleep 2
 show-link.sh
 
+# یک تأخیر ۲ ثانیه‌ای بده تا فایل لینک حتماً ذخیره شود
+sleep 2
+
 # راه‌اندازی وب سرور برای نمایش لینک
 web-server.sh &
 
