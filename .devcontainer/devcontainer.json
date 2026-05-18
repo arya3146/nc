@@ -1,5 +1,5 @@
 {
-  "name": "NikVPN Codespace",
+  "name": "NikVPN Mobile Codespace",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "."
@@ -12,7 +12,7 @@
       "version": "latest"
     }
   },
-  "postAttachCommand": "gh codespace ports visibility 443:public -c $CODESPACE_NAME && gh codespace ports visibility 8080:public -c $CODESPACE_NAME && bash /usr/local/bin/start.sh",
+  "postAttachCommand": "bash -c 'gh codespace ports visibility 443:public -c $CODESPACE_NAME || true; gh codespace ports visibility 8080:public -c $CODESPACE_NAME || true; bash /usr/local/bin/start.sh'",
   "portsAttributes": {
     "443": {
       "label": "nikvpn",
