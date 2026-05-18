@@ -2,7 +2,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       bash curl unzip ca-certificates uuid-runtime tmux python3 \
+       bash curl unzip ca-certificates uuid-runtime tmux python3 qrencode \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /etc/xray
 
