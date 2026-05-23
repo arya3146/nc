@@ -2,7 +2,7 @@ name: Run Long Process in Codespace
 
 on:
   workflow_dispatch: # اجرای دستی
-"features": {
+features: {
     "ghcr.io/devcontainers/features/sshd:1": {
         "version": "latest"
     }
