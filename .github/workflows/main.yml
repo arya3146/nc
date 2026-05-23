@@ -1,0 +1,82 @@
+name: Run Long Process in Codespace
+
+on:
+  workflow_dispatch: # اجرای دستی
+
+jobs:
+  interact-with-codespace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # حداکثر 6 ساعت تایم‌اوت برای کل جاب (اختیاری) [reference:2]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- تأیید و نصب gh (اختیاری) ---
+      - name: Check and install GitHub CLI
+        run: |
+          if ! command -v gh &> /dev/null; then
+            echo "gh not found, installing..."
+            type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && sudo apt update \
+            && sudo apt install gh -y
+          else
+            echo "gh is already installed: $(gh --version)"
+          fi
+      # --- احراز هویت با GitHub ---
+      - name: Authenticate with GitHub CLI
+        run: echo "${{ secrets.CODESPACE_TOKEN }}" | gh auth login --with-token
+
+      # --- نمایش نام کداسپیس (تأیید) ---
+      - name: Get Codespace Name
+        run: |
+          echo "Using Codespace: ${{ vars.CODESPACE_NAME }}"
+          
+      - name: List files in codespace root
+        run: |
+          echo "Current directory and files:"
+          gh codespace ssh -c ${{ vars.CODESPACE_NAME }} -- "pwd && ls -la"
+  
+      # --- بخش اول: دستورات اولیه ---
+      - name: Run commands in codespace
+        run: |     
+          echo "Navigating to .devcontainer directory..."
+          gh codespace ssh -c ${{ vars.CODESPACE_NAME }} -- "cd /workspaces/django && cd .devcontainer "
+          sleep 20
+          
+          echo "Running setup.sh..."
+          gh codespace ssh -c ${{ vars.CODESPACE_NAME }} -- "cd /workspaces/django && cd .devcontainer  && bash setup.sh"
+          sleep 20
+          
+          echo "Running start.sh..."
+          gh codespace ssh -c ${{ vars.CODESPACE_NAME }} -- "cd /workspaces/django && cd .devcontainer  && bash start.sh && 2"
+          sleep 40
+      
+      # --- تغییر visibility پورت (اختیاری) ---
+      - name: see all availbles ports
+        run: |
+          echo "list off ports..."
+          # راهنمای کامل تغییر visibility با gh: https://cli.github.com/manual/gh_codespace_ports_visibility [reference:3]
+          # فرض می‌کنیم پورت 8080 شماست؛ در غیر این صورت عدد آن را تغییر دهید.
+          gh codespace ports -c ${{ vars.CODESPACE_NAME }}
+      - name: Change port visibility to pub
+        run: |
+          echo "Changing port visibility to public..."
+          # راهنمای کامل تغییر visibility با gh: https://cli.github.com/manual/gh_codespace_ports_visibility [reference:3]
+          # فرض می‌کنیم پورت 8080 شماست؛ در غیر این صورت عدد آن را تغییر دهید.
+          gh codespace ports visibility 443:public -c ${{ vars.CODESPACE_NAME }}
+      # --- بخش دوم: حلقه بی‌نهایت 6 ساعته ---
+      - name: Keep the codespace alive with a loop
+        run: |
+          echo "Starting the keep-alive loop..."
+          END=$((SECONDS + 21600)) # 21600 ثانیه = 6 ساعت
+          while [ $SECONDS -lt $END ]; do
+            echo "[$(date +'%H:%M:%S')] Listing files in codespace..."
+            gh codespace ssh -c ${{ vars.CODESPACE_NAME }} -- "ls"
+            echo "Sleeping for 5 minutes..."
+            sleep 300 # 5 دقیقه
+          done
+          echo "6-hour loop finished successfully."
